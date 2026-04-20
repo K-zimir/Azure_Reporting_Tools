@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Azure Obsolescence Tracker — Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#6366f1;--primary-soft:#eef2ff;--bg:#f1f5f9;--card:#fff;--text:#0f172a;--text-sec:#475569;--muted:#94a3b8;--border:#e2e8f0;--border-s:#f1f5f9;--red:#ef4444;--red-s:#fef2f2;--orange:#f59e0b;--orange-s:#fffbeb;--green:#10b981;--green-s:#ecfdf5;--blue:#3b82f6;--blue-s:#eff6ff;--purple:#8b5cf6;--purple-s:#f5f3ff;--cyan:#06b6d4;--eol:#dc2626;--eol-s:#fef2f2;--crit:#f97316;--crit-s:#fff7ed;--r:14px;--r-sm:9px;--mono:'JetBrains Mono',monospace;--font:'DM Sans',sans-serif}
+[data-theme=dark]{--bg:#0b0f1a;--card:#141927;--text:#e2e8f0;--text-sec:#94a3b8;--muted:#64748b;--border:#1e293b;--border-s:#1e293b;--primary-soft:#1e1b4b;--red-s:#450a0a;--orange-s:#451a03;--green-s:#052e16;--blue-s:#172554;--eol-s:#450a0a;--crit-s:#431407}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:var(--muted);border-radius:3px}
+.topbar{background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);color:#f8fafc;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.topbar h1{font-size:16px;font-weight:800;letter-spacing:-.3px}.topbar .meta{font-size:10px;opacity:.55;margin-top:2px}
+.tb-actions{display:flex;gap:7px;align-items:center}
+.btn-g{padding:6px 13px;border-radius:var(--r-sm);border:none;cursor:pointer;font-size:10px;font-weight:700;font-family:var(--font);background:rgba(255,255,255,.12);color:#fff;transition:.15s;letter-spacing:.3px}
+.btn-g:hover{background:rgba(255,255,255,.22)}
+.theme-btn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.1);border:none;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center}
+.gsearch{position:relative;width:210px}.gsearch input{width:100%;padding:6px 10px 6px 28px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:var(--r-sm);color:#fff;font-size:10px;font-family:var(--font)}.gsearch input::placeholder{color:rgba(255,255,255,.4)}.gsearch .si{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.5}
+nav{background:var(--card);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:0;position:sticky;top:50px;z-index:100;overflow-x:auto;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+nav button{padding:11px 14px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:500;font-family:var(--font);color:var(--muted);border-bottom:2.5px solid transparent;transition:.15s;white-space:nowrap;display:flex;align-items:center;gap:4px}
+nav button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700}
+nav button:hover{color:var(--primary);background:var(--primary-soft)}
+.nb{background:var(--red);color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:10px;line-height:1.4}
+.page{display:none;padding:22px 28px;max-width:1440px;margin:0 auto}.page.active{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1}}
+.disc{background:#eef2ff;border-bottom:2px solid var(--primary);color:#3730a3;padding:6px 28px;font-size:10px;font-weight:600;display:flex;align-items:center;gap:5px}[data-theme=dark] .disc{background:#1e1b4b;color:#a5b4fc}
+.kpigrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-bottom:20px}
+.kcard{background:var(--card);border-radius:var(--r);padding:16px 18px;border:1px solid var(--border-s);position:relative;overflow:hidden;transition:transform .15s;cursor:default}
+.kcard:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kc-red::before{background:var(--red)}.kc-orange::before{background:var(--orange)}.kc-green::before{background:var(--green)}.kc-purple::before{background:var(--purple)}.kc-cyan::before{background:var(--cyan)}.kc-blue::before{background:var(--blue)}.kc-eol::before{background:var(--eol)}
+.kicon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:8px}
+.kc-red .kicon{background:var(--red-s)}.kc-orange .kicon{background:var(--orange-s)}.kc-green .kicon{background:var(--green-s)}.kc-purple .kicon{background:#f5f3ff}.kc-cyan .kicon{background:#ecfeff}.kc-blue .kicon{background:var(--blue-s)}.kc-eol .kicon{background:var(--eol-s)}
+.klabel{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.7px;margin-bottom:3px}
+.kvalue{font-size:24px;font-weight:800;line-height:1;font-family:var(--mono)}
+.ksub{font-size:9px;color:var(--muted);margin-top:3px}
+.crow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.crow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.ccard{background:var(--card);border-radius:var(--r);padding:18px;border:1px solid var(--border-s)}
+.ccard h3{font-size:12px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;color:var(--text)}
+.chip{font-size:8px;font-weight:700;padding:2px 7px;border-radius:7px;background:var(--primary-soft);color:var(--primary)}
+.section{background:var(--card);border-radius:var(--r);padding:18px;border:1px solid var(--border-s);margin-bottom:16px}
+.shdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.shdr h2{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.badge{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:9px;font-weight:600;color:var(--muted)}
+.fbr{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.fi{padding:5px 8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:10px;background:var(--card);color:var(--text);font-family:var(--font);min-width:110px}
+.fi:focus{outline:none;border-color:var(--primary)}
+.tw{overflow-x:auto;border-radius:var(--r-sm);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead tr{background:var(--bg)}
+th{padding:9px 11px;text-align:left;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--primary)}
+td{padding:8px 11px;border-bottom:1px solid var(--border-s);vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:var(--primary-soft)}
+.cn{max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:5px;font-size:9px;font-weight:700}
+.t-red{background:var(--red-s);color:var(--red)}.t-orange{background:var(--orange-s);color:var(--orange)}.t-green{background:var(--green-s);color:var(--green)}.t-blue{background:var(--blue-s);color:var(--blue)}.t-muted{background:var(--bg);color:var(--muted)}.t-eol{background:#450a0a;color:#fca5a5;font-weight:800}.t-crit{background:var(--crit-s);color:var(--crit)}
+[data-theme=dark] .t-eol{background:#7f1d1d;color:#fecaca}
+.csv-btn{padding:4px 11px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);font-size:10px;cursor:pointer;font-weight:600;color:var(--primary);font-family:var(--font)}
+.csv-btn:hover{background:var(--primary-soft);border-color:var(--primary)}
+.pbar{height:7px;border-radius:4px;background:var(--border);overflow:hidden;margin-top:4px}
+.pfill{height:100%;border-radius:4px;transition:width .6s ease}
+.legbox{background:var(--blue-s);border-radius:8px;padding:7px 12px;font-size:10px;margin-bottom:10px;color:var(--text-sec)}
+footer{text-align:center;padding:14px;color:var(--muted);font-size:9px;border-top:1px solid var(--border);margin-top:8px}
+@media(max-width:900px){.crow,.crow2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="disc">⚠ <strong>Read-only analysis.</strong> This tool does NOT modify any Azure resource. — <strong>DEMO MODE</strong> — Synthetic data for illustration purposes.</div>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="font-size:20px">🛡️</div>
+    <div>
+      <h1>Azure Obsolescence Tracker — April 2026</h1>
+      <div class="meta">Generated: 2026-04-20 07:00:00 UTC | Subscriptions: 4 | Look-ahead: 365 days</div>
+    </div>
+  </div>
+  <div class="tb-actions">
+    <div class="gsearch"><span class="si">🔍</span><input type="text" placeholder="Search…" oninput="gsearch(this.value)"/></div>
+    <button class="btn-g">📄 PDF</button>
+    <button class="btn-g">⬇ CSV</button>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+  </div>
+</div>
+
+<nav>
+  <button class="active" onclick="show('dashboard',this)">📊 Dashboard</button>
+  <button onclick="show('vms',this)">🖥 VM OS <span class="nb">8</span></button>
+  <button onclick="show('vmsku',this)">⚙️ VM SKUs <span class="nb">5</span></button>
+  <button onclick="show('appsvc',this)">⚡ Runtimes <span class="nb">4</span></button>
+  <button onclick="show('aks',this)">☸ AKS</button>
+  <button onclick="show('sql',this)">🗄 SQL</button>
+  <button onclick="show('tls',this)">🔒 TLS <span class="nb">3</span></button>
+  <button onclick="show('retire',this)">📅 Retirements <span class="nb">12</span></button>
+  <button onclick="show('lctags',this)">🏷 Lifecycle <span class="nb">7</span></button>
+  <button onclick="show('exec',this)">📋 Executive</button>
+  <button onclick="show('diag',this)">🔧 Diag</button>
+</nav>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="kpigrid">
+    <div class="kcard kc-purple"><div class="kicon">🛡️</div><div class="klabel">Obsolescence Score</div><div class="kvalue" style="color:var(--orange)">54<span style="font-size:13px;color:var(--muted)">/100</span></div><div class="ksub">composite maturity</div></div>
+    <div class="kcard kc-eol"><div class="kicon">💀</div><div class="klabel">End of Life</div><div class="kvalue" style="color:var(--eol)">14</div><div class="ksub">resources past EOL</div></div>
+    <div class="kcard kc-orange"><div class="kicon">🔥</div><div class="klabel">Critical / High</div><div class="kvalue" style="color:var(--orange)">23</div><div class="ksub">9 critical · 14 high</div></div>
+    <div class="kcard kc-blue"><div class="kicon">📊</div><div class="klabel">Total Scanned</div><div class="kvalue">187</div><div class="ksub">across 4 subscriptions</div></div>
+    <div class="kcard kc-red"><div class="kicon">🔒</div><div class="klabel">TLS Issues</div><div class="kvalue" style="color:var(--red)">3</div><div class="ksub">deprecated TLS</div></div>
+    <div class="kcard kc-cyan"><div class="kicon">📅</div><div class="klabel">Retirements</div><div class="kvalue" style="color:var(--cyan)">12</div><div class="ksub">impacted resources</div></div>
+  </div>
+
+  <div class="crow">
+    <div class="ccard">
+      <h3>🏗 Risk by Category</h3>
+      <div style="position:relative;height:200px"><canvas id="chartCat" role="img" aria-label="Stacked bar chart of risk levels by resource category">Risk by category</canvas></div>
+    </div>
+    <div class="ccard">
+      <h3>📊 Risk Distribution</h3>
+      <div style="position:relative;height:200px"><canvas id="chartRisk" role="img" aria-label="Doughnut chart of risk distribution">Risk distribution</canvas></div>
+    </div>
+    <div class="ccard">
+      <h3>⏰ EOL Timeline</h3>
+      <div style="position:relative;height:200px"><canvas id="chartTimeline" role="img" aria-label="Bar chart of EOL timeline by quarter">EOL timeline</canvas></div>
+    </div>
+  </div>
+
+  <div class="ccard" style="margin-bottom:16px">
+    <h3>🖥 OS Version Landscape <span class="chip">18 VMs</span></h3>
+    <div style="position:relative;height:220px"><canvas id="chartOS" role="img" aria-label="Horizontal bar chart of OS versions">OS versions</canvas></div>
+  </div>
+
+  <div class="crow2">
+    <div class="ccard">
+      <h3>⚡ Runtime Versions</h3>
+      <div style="position:relative;height:200px"><canvas id="chartRuntime" role="img" aria-label="Doughnut chart of runtimes">Runtimes</canvas></div>
+    </div>
+    <div class="ccard">
+      <h3>🔒 TLS Compliance</h3>
+      <div style="position:relative;height:200px"><canvas id="chartTLS" role="img" aria-label="Doughnut chart of TLS compliance">TLS compliance</canvas></div>
+    </div>
+  </div>
+
+  <div class="crow2">
+    <div class="section">
+      <div class="shdr"><h2>🚨 Top Urgent Actions</h2><span class="badge">Immediate</span></div>
+      <div id="top-actions"></div>
+    </div>
+    <div class="section">
+      <div class="shdr"><h2>📈 Score Breakdown</h2></div>
+      <div id="score-breakdown"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ VM OS ═══════════════ -->
+<div class="page" id="page-vms">
+  <div class="section">
+    <div class="shdr">
+      <h2>🖥 VM Operating System Lifecycle</h2>
+      <div style="display:flex;gap:6px;align-items:center"><span class="badge">18 VMs</span><button class="csv-btn">⬇ CSV</button></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <div style="background:var(--eol-s);padding:5px 12px;border-radius:8px;font-size:11px"><strong style="color:var(--eol)">5</strong> <span style="color:var(--muted);font-size:9px">EOL</span></div>
+      <div style="background:var(--crit-s);padding:5px 12px;border-radius:8px;font-size:11px"><strong style="color:var(--crit)">3</strong> <span style="color:var(--muted);font-size:9px">Critical</span></div>
+      <div style="background:var(--orange-s);padding:5px 12px;border-radius:8px;font-size:11px"><strong style="color:var(--orange)">4</strong> <span style="color:var(--muted);font-size:9px">High</span></div>
+      <div style="background:var(--blue-s);padding:5px 12px;border-radius:8px;font-size:11px"><strong style="color:var(--blue)">3</strong> <span style="color:var(--muted);font-size:9px">Medium</span></div>
+      <div style="background:var(--green-s);padding:5px 12px;border-radius:8px;font-size:11px"><strong style="color:var(--green)">3</strong> <span style="color:var(--muted);font-size:9px">Low</span></div>
+    </div>
+    <div class="fbr">
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase">Filters:</span>
+      <select class="fi"><option value="">All Subscriptions</option><option>Sub-Production-001</option><option>Sub-Staging-002</option><option>Sub-Dev-003</option><option>Sub-Shared-004</option></select>
+      <select class="fi"><option value="">All OS</option><option>Windows Server</option><option>Ubuntu</option><option>RHEL</option><option>CentOS</option><option>Windows 10</option></select>
+      <select class="fi"><option value="">All Risks</option><option>EOL</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+      <input class="fi" placeholder="VM name…"/>
+    </div>
+    <div class="legbox"><strong>OS detection:</strong> <span class="tag t-muted">Image</span> from VM image reference. <span class="tag t-orange">Tag</span> from <code>os-version</code> tag. <span class="tag t-green">Img+Tag</span> both sources combined.</div>
+    <div class="tw"><table>
+      <thead><tr><th>Sub</th><th>VM</th><th>RG</th><th>Region</th><th>Size</th><th>State</th><th>OS</th><th>Version</th><th>Source</th><th>EOL</th><th>Days</th><th>Risk</th><th>Notes</th></tr></thead>
+      <tbody id="vm-tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════ VM SKU ═══════════════ -->
+<div class="page" id="page-vmsku">
+  <div class="section">
+    <div class="shdr"><h2>⚙️ Deprecated VM SKUs</h2><div style="display:flex;gap:6px"><span class="badge">5 VMs</span><button class="csv-btn">⬇ CSV</button></div></div>
+    <div class="legbox" style="background:var(--orange-s)"><strong>Source:</strong> Azure Advisor + ARG recommendations filtered on series/SKU deprecation. Excludes rightsizing and underutilization.</div>
+    <div class="tw"><table>
+      <thead><tr><th>Sub</th><th>VM</th><th>RG</th><th>Current SKU</th><th>Problem</th><th>Migration Path</th><th>Retire Date</th><th>Days</th><th>Risk</th><th>Guide</th></tr></thead>
+      <tbody id="vmsku-tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════ RUNTIMES ═══════════════ -->
+<div class="page" id="page-appsvc">
+  <div class="section">
+    <div class="shdr"><h2>⚡ App Service Runtimes</h2><div style="display:flex;gap:6px"><span class="badge">22 apps</span><button class="csv-btn">⬇ CSV</button></div></div>
+    <div class="fbr">
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase">Filters:</span>
+      <select class="fi"><option value="">All Runtimes</option><option>.NET</option><option>Node.js</option><option>Python</option><option>Java</option><option>PHP</option></select>
+      <select class="fi"><option value="">All Risks</option><option>EOL</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Sub</th><th>App</th><th>RG</th><th>Kind</th><th>Runtime</th><th>Version</th><th>EOL</th><th>Days</th><th>Risk</th><th>TLS</th><th>HTTPS</th><th>Notes</th></tr></thead>
+      <tbody id="app-tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════ AKS ═══════════════ -->
+<div class="page" id="page-aks">
+  <div class="section">
+    <div class="shdr"><h2>☸ AKS Kubernetes Clusters</h2><div style="display:flex;gap:6px"><span class="badge">6 clusters</span><button class="csv-btn">⬇ CSV</button></div></div>
+    <div class="tw"><table>
+      <thead><tr><th>Sub</th><th>Cluster</th><th>RG</th><th>Region</th><th>K8s Version</th><th>Nodes</th><th>EOL</th><th>Days</th><th>Risk</th><th>Notes</th></tr></thead>
+      <tbody id="aks-tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SQL ═══════════════ -->
+<div class="page" id="page-sql">
+  <div class="section">
+    <div class="shdr"><h2>🗄 SQL Databases</h2><div style="display:flex;gap:6px"><span class="badge">14 databases</span><button class="csv-btn">⬇ CSV</button></div></div>
+    <div class="tw"><table>
+      <thead><tr><th>Sub</th><th>Server</th><th>Database</th><th>RG</th><th>Version</th><th>SKU</th><th>Min TLS</th><th>TLS Status</th><th>Risk</th><th>Notes</th></tr></thead>
+      <tbody id="sql-tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════ TLS ═══════════════ -->
+<div class="page" id="page-tls">
+  <div class="section">
+    <div class="shdr"><h2>🔒 TLS/SSL Compliance</h2><div style="display:flex;gap:6px"><span class="badge">31 resources</span><button class="csv-btn">⬇ CSV</button></div></div>
+    <div class="fbr">
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase">Filters:</span>
+      <select class="fi"><option value="">All Types</option><option>Storage Account</option><option>Application Gateway</option><option>Redis Cache</option></select>
+      <select class="fi"><option value="">All Status</option><option>OK</option><option>Deprecated</option></select>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Sub</th><th>Type</th><th>Name</th><th>RG</th><th>Region</th><th>Min TLS</th><th>Status</th><th>Risk</th><th>Notes</th></tr></thead>
+      <tbody id="tls-tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════ RETIREMENTS ═══════════════ -->
+<div class="page" id="page-retire">
+  <div class="section">
+    <div class="shdr"><h2>📅 Azure Advisor Retirements & Deprecations</h2><div style="display:flex;gap:6px"><span class="badge">12 resources</span><button class="csv-btn">⬇ CSV</button></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <div style="background:var(--eol-s);padding:6px 14px;border-radius:8px"><strong style="color:var(--eol);font-size:16px">4</strong> <span style="font-size:9px;color:var(--muted)">distinct problems</span></div>
+      <div style="background:var(--orange-s);padding:6px 14px;border-radius:8px"><strong style="color:var(--orange);font-size:16px">12</strong> <span style="font-size:9px;color:var(--muted)">impacted resources</span></div>
+      <div style="background:var(--red-s);padding:6px 14px;border-radius:8px"><strong style="color:var(--red);font-size:16px">2</strong> <span style="font-size:9px;color:var(--muted)">already retired</span></div>
+    </div>
+    <div class="legbox" style="background:var(--primary-soft)"><strong>Master/Detail:</strong> Check problems in the grouped table to filter impacted resources below. Click 📄 for the official migration guide.</div>
+    <h3 style="font-size:12px;font-weight:700;margin-bottom:8px">📋 Problems (grouped)</h3>
+    <div class="tw" style="margin-bottom:14px"><table>
+      <thead><tr><th style="width:28px"><input type="checkbox" checked/></th><th>Problem</th><th>Service</th><th>Solution</th><th>Retire Date</th><th>Risk</th><th>Resources</th><th>Guide</th></tr></thead>
+      <tbody id="retire-master"></tbody>
+    </table></div>
+    <h3 style="font-size:12px;font-weight:700;margin-bottom:8px">📦 Impacted Resources</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Sub</th><th>Service</th><th>Resource</th><th>RG</th><th>Problem</th><th>Retire Date</th><th>Days Left</th><th>Risk</th><th>Guide</th></tr></thead>
+      <tbody id="retire-detail"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════ LIFECYCLE TAGS ═══════════════ -->
+<div class="page" id="page-lctags">
+  <div class="section">
+    <div class="shdr"><h2>🏷 Lifecycle Tag Compliance</h2><div style="display:flex;gap:6px"><span class="badge">28 RGs</span><button class="csv-btn">⬇ CSV</button></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <div style="background:var(--bg);padding:6px 14px;border-radius:8px;border:1px solid var(--border)"><strong style="font-size:16px">28</strong> <span style="font-size:9px;color:var(--muted)">RGs scanned</span></div>
+      <div style="background:var(--red-s);padding:6px 14px;border-radius:8px"><strong style="color:var(--red);font-size:16px">4</strong> <span style="font-size:9px;color:var(--muted)">missing</span></div>
+      <div style="background:var(--orange-s);padding:6px 14px;border-radius:8px"><strong style="color:var(--orange);font-size:16px">2</strong> <span style="font-size:9px;color:var(--muted)">empty</span></div>
+      <div style="background:var(--eol-s);padding:6px 14px;border-radius:8px"><strong style="color:var(--eol);font-size:16px">1</strong> <span style="font-size:9px;color:var(--muted)">expired</span></div>
+      <div style="background:var(--green-s);padding:6px 14px;border-radius:8px"><strong style="color:var(--green);font-size:16px">15</strong> <span style="font-size:9px;color:var(--muted)">OK</span></div>
+    </div>
+    <div class="legbox">Tag: <code>lifecycle</code> — Expected format: <code>MM.yyyy</code> &nbsp;<span class="tag t-eol">Expired</span> past &nbsp;<span class="tag t-crit">Imminent</span> &lt;90d &nbsp;<span class="tag t-orange">Approaching</span> &lt;6m &nbsp;<span class="tag t-green">OK</span> &nbsp;<span class="tag t-red">Missing/Empty/Bad</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>Subscription</th><th>Resource Group</th><th>Region</th><th>Tag Value</th><th>Status</th><th>Days Left</th><th>Risk</th><th>Resources</th></tr></thead>
+      <tbody id="lctag-tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════ EXECUTIVE ═══════════════ -->
+<div class="page" id="page-exec">
+  <div style="background:var(--card);border-radius:var(--r);padding:26px;border:1px solid var(--border-s);max-width:760px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:22px;padding-bottom:16px;border-bottom:2px solid var(--border)">
+      <div style="font-size:10px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">Executive Summary</div>
+      <h2 style="font-size:20px;font-weight:900">Azure Obsolescence — April 2026</h2>
+      <p style="color:var(--muted);font-size:10px;margin-top:4px">4 subscriptions · Read-only analysis</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
+      <div style="text-align:center;padding:16px;background:var(--bg);border-radius:10px"><div style="font-size:28px;font-weight:900;color:var(--orange);font-family:var(--mono)">54/100</div><div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-top:3px">Obsolescence Score</div></div>
+      <div style="text-align:center;padding:16px;background:var(--bg);border-radius:10px"><div style="font-size:28px;font-weight:900;color:var(--eol);font-family:var(--mono)">14</div><div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-top:3px">End of Life</div></div>
+      <div style="text-align:center;padding:16px;background:var(--bg);border-radius:10px"><div style="font-size:28px;font-weight:900;color:var(--orange);font-family:var(--mono)">23</div><div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-top:3px">Critical + High</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="padding:14px;background:var(--eol-s);border-radius:10px;border-left:4px solid var(--eol)">
+        <div style="font-size:9px;font-weight:700;color:var(--eol);text-transform:uppercase;margin-bottom:6px">Immediate Actions</div>
+        <div style="font-size:11px;line-height:1.8">• 5 VMs on end-of-life OS<br>• 3 App Services with deprecated runtime<br>• 3 resources with TLS &lt; 1.2<br>• 5 VMs on deprecated SKU series</div>
+      </div>
+      <div style="padding:14px;background:var(--orange-s);border-radius:10px;border-left:4px solid var(--orange)">
+        <div style="font-size:9px;font-weight:700;color:var(--orange);text-transform:uppercase;margin-bottom:6px">Plan Next 6 Months</div>
+        <div style="font-size:11px;line-height:1.8">• 4 VMs approaching EOL (&lt;180d)<br>• 12 service retirements from Advisor<br>• 7 resource groups missing lifecycle tag<br>• 1 AKS cluster on unsupported K8s</div>
+      </div>
+    </div>
+    <div style="text-align:center;padding-top:12px;border-top:1px solid var(--border);margin-top:16px">
+      <p style="font-size:9px;color:var(--muted)">⚠ Read-only · Azure Automation Runbook · v1.2.0</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ DIAG ═══════════════ -->
+<div class="page" id="page-diag">
+  <div class="section">
+    <div class="shdr"><h2>🔧 Diagnostics</h2></div>
+    <div style="background:#0f172a;color:#38bdf8;font-family:var(--mono);font-size:10px;padding:14px;border-radius:8px;white-space:pre-wrap;max-height:380px;overflow-y:auto;line-height:1.7" id="diag-box"></div>
+  </div>
+</div>
+
+<footer>Azure Obsolescence Tracker · April 2026 · v1.2.0 · DEMO — Synthetic data only · Read-only</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+function show(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');btn.classList.add('active')}
+function toggleTheme(){const h=document.documentElement,d=h.getAttribute('data-theme')==='dark';h.setAttribute('data-theme',d?'':'dark');document.getElementById('themeBtn').textContent=d?'🌙':'☀️'}
+function gsearch(q){q=q.toLowerCase().trim();document.querySelectorAll('table tbody tr').forEach(r=>{r.style.display=!q||r.textContent.toLowerCase().includes(q)?'':'none'})}
+function risk(l){const m={EOL:'t-eol',Critical:'t-crit',High:'t-orange',Medium:'t-blue',Low:'t-green',Unknown:'t-muted'};return`<span class="tag ${m[l]||'t-muted'}">${l}</span>`}
+function days(d){const v=parseInt(d);if(isNaN(v)||v>9000)return'<span style="color:var(--muted)">—</span>';if(v<0)return`<span style="color:var(--eol);font-weight:800">${Math.abs(v)}d overdue</span>`;if(v<=90)return`<span style="color:var(--red);font-weight:700">${v}d</span>`;if(v<=180)return`<span style="color:var(--orange)">${v}d</span>`;if(v<=365)return`<span style="color:var(--blue)">${v}d</span>`;return`<span style="color:var(--green)">${v}d</span>`}
+function fdate(d){if(!d)return'—';const dt=new Date(d);return`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`}
+
+const VMs=[
+  {sub:'Sub-Production-001',name:'vm-prod-web-01',rg:'RG-PROD-WEB',loc:'westeurope',size:'Standard_D4s_v3',state:'Running',os:'Windows Server',ver:'2012 R2',src:'Image',eol:'2023-10-10',ext:'2026-10-13',dEOL:-554,risk:'EOL',notes:'ESU Year 3'},
+  {sub:'Sub-Production-001',name:'vm-prod-sql-01',rg:'RG-PROD-SQL',loc:'westeurope',size:'Standard_E8s_v3',state:'Running',os:'Windows Server',ver:'2016',src:'Image',eol:'2027-01-12',ext:'2027-01-12',dEOL:632,risk:'Medium',notes:''},
+  {sub:'Sub-Production-001',name:'vm-prod-app-02',rg:'RG-PROD-APP',loc:'westeurope',size:'Standard_D8s_v3',state:'Running',os:'Ubuntu',ver:'18.04 LTS',src:'Image',eol:'2023-04-02',ext:'2028-04-02',dEOL:-748,risk:'EOL',notes:'ESU available'},
+  {sub:'Sub-Production-001',name:'vm-prod-dc-01',rg:'RG-PROD-INFRA',loc:'westeurope',size:'Standard_D2s_v3',state:'Running',os:'Windows Server',ver:'2019',src:'Image',eol:'2029-01-09',ext:'2029-01-09',dEOL:994,risk:'Low',notes:''},
+  {sub:'Sub-Staging-002',name:'vm-stg-api-01',rg:'RG-STG-API',loc:'northeurope',size:'Standard_D4s_v3',state:'Running',os:'Ubuntu',ver:'20.04 LTS',src:'Img+Tag',eol:'2025-04-02',ext:'2030-04-02',dEOL:-18,risk:'EOL',notes:'Mainstream EOL passed'},
+  {sub:'Sub-Staging-002',name:'vm-stg-front-01',rg:'RG-STG-FRONT',loc:'northeurope',size:'Standard_D2s_v3',state:'Running',os:'Ubuntu',ver:'22.04 LTS',src:'Image',eol:'2027-04-01',ext:'2032-04-01',dEOL:1076,risk:'Low',notes:'LTS'},
+  {sub:'Sub-Dev-003',name:'vm-dev-build-01',rg:'RG-DEV-BUILD',loc:'westeurope',size:'Standard_F8s_v2',state:'Running',os:'CentOS',ver:'7',src:'Tag',eol:'2024-06-30',ext:'2024-06-30',dEOL:-294,risk:'EOL',notes:'EOL — migrate to RHEL 8+'},
+  {sub:'Sub-Dev-003',name:'vm-dev-jump-01',rg:'RG-DEV-INFRA',loc:'westeurope',size:'Standard_B2ms',state:'Running',os:'Windows 10',ver:'Enterprise',src:'Image',eol:'2025-10-14',ext:'2028-10-14',dEOL:-188,risk:'EOL',notes:'ESU free on Azure'},
+  {sub:'Sub-Dev-003',name:'vm-dev-test-02',rg:'RG-DEV-TEST',loc:'eastus',size:'Standard_D2s_v3',state:'Stopped',os:'RHEL',ver:'8',src:'Image',eol:'2029-05-31',ext:'2032-05-31',dEOL:1136,risk:'Low',notes:''},
+  {sub:'Sub-Dev-003',name:'vm-dev-ci-01',rg:'RG-DEV-CI',loc:'eastus',size:'Standard_D4s_v3',state:'Running',os:'Ubuntu',ver:'20.04 LTS',src:'Image',eol:'2025-04-02',ext:'2030-04-02',dEOL:-18,risk:'Critical',notes:'Mainstream EOL'},
+  {sub:'Sub-Shared-004',name:'vm-shared-ntp-01',rg:'RG-SHARED-INFRA',loc:'westeurope',size:'Standard_B2s',state:'Running',os:'Windows Server',ver:'2022',src:'Image',eol:'2031-10-14',ext:'2031-10-14',dEOL:2003,risk:'Low',notes:''},
+  {sub:'Sub-Shared-004',name:'vm-shared-proxy-01',rg:'RG-SHARED-NET',loc:'westeurope',size:'Standard_D2s_v3',state:'Running',os:'Ubuntu',ver:'22.04 LTS',src:'Image',eol:'2027-04-01',ext:'2032-04-01',dEOL:1076,risk:'Low',notes:'LTS'},
+  {sub:'Sub-Production-001',name:'vm-prod-mon-01',rg:'RG-PROD-MON',loc:'westeurope',size:'Standard_D4s_v3',state:'Running',os:'Windows Server',ver:'2016',src:'Image',eol:'2027-01-12',ext:'2027-01-12',dEOL:632,risk:'Medium',notes:''},
+  {sub:'Sub-Staging-002',name:'vm-stg-db-01',rg:'RG-STG-DB',loc:'northeurope',size:'Standard_E4s_v3',state:'Running',os:'Ubuntu',ver:'20.04 LTS',src:'Img+Tag',eol:'2025-04-02',ext:'2030-04-02',dEOL:-18,risk:'Critical',notes:'Mainstream EOL'},
+  {sub:'Sub-Dev-003',name:'vm-dev-runner-02',rg:'RG-DEV-CI',loc:'eastus',size:'Standard_D2s_v3',state:'Running',os:'RHEL',ver:'9',src:'Image',eol:'2032-05-31',ext:'2035-05-31',dEOL:2232,risk:'Low',notes:''},
+  {sub:'Sub-Dev-003',name:'vm-dev-legacy-01',rg:'RG-DEV-LEGACY',loc:'westeurope',size:'Standard_D4s_v2',state:'Running',os:'Windows Server',ver:'2012 R2',src:'Image',eol:'2023-10-10',ext:'2026-10-13',dEOL:-554,risk:'Critical',notes:'ESU Year 3 ends 10/2026'},
+  {sub:'Sub-Production-001',name:'vm-prod-batch-01',rg:'RG-PROD-BATCH',loc:'westeurope',size:'Standard_F16s_v2',state:'Running',os:'Ubuntu',ver:'22.04 LTS',src:'Image',eol:'2027-04-01',ext:'2032-04-01',dEOL:1076,risk:'Low',notes:''},
+  {sub:'Sub-Shared-004',name:'vm-shared-backup-01',rg:'RG-SHARED-BACKUP',loc:'northeurope',size:'Standard_D2s_v3',state:'Stopped',os:'Windows Server',ver:'2019',src:'Image',eol:'2029-01-09',ext:'2029-01-09',dEOL:994,risk:'Low',notes:''},
+];
+
+const VMSKUs=[
+  {sub:'Sub-Dev-003',vm:'vm-dev-legacy-01',rg:'RG-DEV-LEGACY',sku:'Standard_D4s_v2',problem:'Dv2-series VMs are being retired',solution:'Migrate to Dv5 or Ev5 series',retire:'2025-08-31',dRetire:-232,risk:'EOL',link:'https://aka.ms/dv2-retire'},
+  {sub:'Sub-Dev-003',vm:'vm-dev-build-01',rg:'RG-DEV-BUILD',sku:'Standard_F8s_v2',problem:'Fsv2-series scheduled for retirement',solution:'Migrate to Fdsv5 or Fasv5 series',retire:'2026-08-31',dRetire:133,risk:'High',link:'https://aka.ms/fsv2-retire'},
+  {sub:'Sub-Production-001',vm:'vm-prod-mon-01',rg:'RG-PROD-MON',sku:'Standard_D4s_v3',problem:'Dv3/Ev3 series retirement announced',solution:'Migrate to Dv5/Ev5 series',retire:'2027-03-31',dRetire:345,risk:'Medium',link:''},
+  {sub:'Sub-Staging-002',vm:'vm-stg-db-01',rg:'RG-STG-DB',sku:'Standard_E4s_v3',problem:'Ev3-series retirement in progress',solution:'Upgrade to Ev5 or Ebsv5 series',retire:'2027-03-31',dRetire:345,risk:'Medium',link:''},
+  {sub:'Sub-Shared-004',vm:'vm-shared-backup-01',rg:'RG-SHARED-BACKUP',sku:'Standard_D2s_v3',problem:'Dv3-series scheduled for retirement',solution:'Migrate to Dv5 series',retire:'2027-03-31',dRetire:345,risk:'Medium',link:''},
+];
+
+const Apps=[
+  {sub:'Sub-Production-001',name:'app-prod-api-001',rg:'RG-PROD-API',kind:'app',rt:'.NET',rtv:'3.1',eol:'2022-12-13',dEOL:-849,risk:'EOL',tls:'1.2',tlss:'OK',https:'True',notes:''},
+  {sub:'Sub-Production-001',name:'app-prod-func-001',rg:'RG-PROD-FUNC',kind:'functionapp',rt:'Node.js',rtv:'14',eol:'2023-04-30',dEOL:-720,risk:'EOL',tls:'1.2',tlss:'OK',https:'True',notes:''},
+  {sub:'Sub-Staging-002',name:'app-stg-web-001',rg:'RG-STG-WEB',kind:'app',rt:'Node.js',rtv:'18',eol:'2025-04-30',dEOL:10,risk:'Critical',tls:'1.1',tlss:'Deprecated',https:'False',notes:'TLS deprecated'},
+  {sub:'Sub-Staging-002',name:'app-stg-api-001',rg:'RG-STG-API',kind:'app',rt:'Python',rtv:'3.8',eol:'2024-10-14',dEOL:-188,risk:'EOL',tls:'1.2',tlss:'OK',https:'True',notes:''},
+  {sub:'Sub-Dev-003',name:'app-dev-test-001',rg:'RG-DEV-APP',kind:'app',rt:'.NET',rtv:'8.0',eol:'2026-11-10',dEOL:570,risk:'Medium',tls:'1.2',tlss:'OK',https:'True',notes:'LTS'},
+  {sub:'Sub-Dev-003',name:'app-dev-func-002',rg:'RG-DEV-FUNC',kind:'functionapp',rt:'Node.js',rtv:'20',eol:'2026-04-30',dEOL:10,risk:'Critical',tls:'1.2',tlss:'OK',https:'True',notes:'Active LTS ends Apr 2026'},
+  {sub:'Sub-Dev-003',name:'app-dev-java-001',rg:'RG-DEV-APP',kind:'app',rt:'Java',rtv:'11',eol:'2024-09-30',dEOL:-202,risk:'EOL',tls:'1.2',tlss:'OK',https:'True',notes:''},
+  {sub:'Sub-Shared-004',name:'app-shared-auth-001',rg:'RG-SHARED-AUTH',kind:'app',rt:'.NET',rtv:'6.0',eol:'2024-11-12',dEOL:-159,risk:'EOL',tls:'1.2',tlss:'OK',https:'True',notes:''},
+  {sub:'Sub-Production-001',name:'app-prod-front-001',rg:'RG-PROD-FRONT',kind:'app',rt:'Node.js',rtv:'20',eol:'2026-04-30',dEOL:10,risk:'Critical',tls:'1.2',tlss:'OK',https:'True',notes:''},
+  {sub:'Sub-Production-001',name:'app-prod-report-001',rg:'RG-PROD-REPORT',kind:'app',rt:'Python',rtv:'3.11',eol:'2027-10-24',dEOL:917,risk:'Low',tls:'1.2',tlss:'OK',https:'True',notes:''},
+  {sub:'Sub-Staging-002',name:'app-stg-func-001',rg:'RG-STG-FUNC',kind:'functionapp',rt:'.NET',rtv:'8.0',eol:'2026-11-10',dEOL:570,risk:'Medium',tls:'1.2',tlss:'OK',https:'True',notes:''},
+  {sub:'Sub-Dev-003',name:'app-dev-php-001',rg:'RG-DEV-APP',kind:'app',rt:'PHP',rtv:'7.4',eol:'2022-11-28',dEOL:-874,risk:'EOL',tls:'1.2',tlss:'OK',https:'False',notes:''},
+  {sub:'Sub-Shared-004',name:'app-shared-notify-001',rg:'RG-SHARED-NOTIFY',kind:'functionapp',rt:'Node.js',rtv:'22',eol:'2027-04-30',dEOL:375,risk:'Low',tls:'1.2',tlss:'OK',https:'True',notes:'LTS'},
+  {sub:'Sub-Production-001',name:'app-prod-svc-002',rg:'RG-PROD-API',kind:'app',rt:'.NET',rtv:'8.0',eol:'2026-11-10',dEOL:570,risk:'Medium',tls:'1.2',tlss:'OK',https:'True',notes:''},
+  {sub:'Sub-Production-001',name:'app-prod-svc-003',rg:'RG-PROD-API',kind:'app',rt:'Java',rtv:'21',eol:'2031-09-30',dEOL:1989,risk:'Low',tls:'1.2',tlss:'OK',https:'True',notes:'LTS'},
+];
+
+const AKS=[
+  {sub:'Sub-Production-001',name:'aks-prod-001',rg:'RG-PROD-AKS',loc:'westeurope',ver:'1.27.9',nodes:12,eol:'',dEOL:-1,risk:'EOL',notes:'Out of support — not in Azure supported versions'},
+  {sub:'Sub-Production-001',name:'aks-prod-002',rg:'RG-PROD-AKS',loc:'westeurope',ver:'1.31.2',nodes:8,eol:'',dEOL:9999,risk:'Low',notes:'Supported (from Azure API)'},
+  {sub:'Sub-Staging-002',name:'aks-stg-001',rg:'RG-STG-AKS',loc:'northeurope',ver:'1.30.6',nodes:4,eol:'',dEOL:9999,risk:'Low',notes:'Supported (from Azure API)'},
+  {sub:'Sub-Dev-003',name:'aks-dev-001',rg:'RG-DEV-AKS',loc:'eastus',ver:'1.28.5',nodes:3,eol:'2025-03-01',dEOL:-50,risk:'EOL',notes:'FALLBACK — Out of support'},
+  {sub:'Sub-Dev-003',name:'aks-dev-002',rg:'RG-DEV-AKS',loc:'eastus',ver:'1.32.1',nodes:2,eol:'',dEOL:9999,risk:'Low',notes:'Supported (from Azure API)'},
+  {sub:'Sub-Shared-004',name:'aks-shared-001',rg:'RG-SHARED-AKS',loc:'westeurope',ver:'1.31.2',nodes:6,eol:'',dEOL:9999,risk:'Low',notes:'Supported (from Azure API)'},
+];
+
+const SQL=[
+  {sub:'Sub-Production-001',srv:'sql-prod-001',db:'ProductionDB',rg:'RG-PROD-SQL',ver:'12.0',sku:'Premium',tls:'1.0',tlss:'Deprecated',risk:'High',notes:'TLS 1.0 deprecated'},
+  {sub:'Sub-Production-001',srv:'sql-prod-001',db:'AnalyticsDB',rg:'RG-PROD-SQL',ver:'12.0',sku:'Standard S3',tls:'1.0',tlss:'Deprecated',risk:'High',notes:'TLS 1.0 deprecated'},
+  {sub:'Sub-Production-001',srv:'sql-prod-002',db:'ReportingDB',rg:'RG-PROD-REPORT',ver:'12.0',sku:'Premium',tls:'1.2',tlss:'OK',risk:'Low',notes:'Azure SQL managed lifecycle'},
+  {sub:'Sub-Staging-002',srv:'sql-stg-001',db:'StagingDB',rg:'RG-STG-DB',ver:'12.0',sku:'Standard S2',tls:'1.2',tlss:'OK',risk:'Low',notes:'Azure SQL managed lifecycle'},
+  {sub:'Sub-Staging-002',srv:'sql-stg-001',db:'TestDataDB',rg:'RG-STG-DB',ver:'12.0',sku:'Standard S1',tls:'1.2',tlss:'OK',risk:'Low',notes:'Azure SQL managed lifecycle'},
+  {sub:'Sub-Dev-003',srv:'sql-dev-001',db:'DevDB',rg:'RG-DEV-SQL',ver:'12.0',sku:'Basic',tls:'1.2',tlss:'OK',risk:'Low',notes:'Azure SQL managed lifecycle'},
+  {sub:'Sub-Dev-003',srv:'sql-dev-001',db:'TestDB',rg:'RG-DEV-SQL',ver:'12.0',sku:'Basic',tls:'1.2',tlss:'OK',risk:'Low',notes:'Azure SQL managed lifecycle'},
+  {sub:'Sub-Dev-003',srv:'sql-dev-002',db:'MigrationDB',rg:'RG-DEV-MIGRATION',ver:'12.0',sku:'Standard S0',tls:'1.2',tlss:'OK',risk:'Low',notes:'Azure SQL managed lifecycle'},
+];
+
+const TLS=[
+  {sub:'Sub-Staging-002',type:'Storage Account',name:'stgstorage001',rg:'RG-STG-STORAGE',loc:'northeurope',tls:'TLS1_0',status:'Deprecated',risk:'Critical',notes:'TLS 1.0/1.1 deprecated — upgrade to TLS 1.2'},
+  {sub:'Sub-Dev-003',type:'Application Gateway',name:'agw-dev-001',rg:'RG-DEV-NET',loc:'eastus',tls:'AppGwSslPolicy20150501',status:'Deprecated',risk:'High',notes:'Old SSL policy — upgrade to TLS 1.2+'},
+  {sub:'Sub-Dev-003',type:'Redis Cache',name:'redis-dev-cache-001',rg:'RG-DEV-CACHE',loc:'eastus',tls:'1.0',status:'Deprecated',risk:'High',notes:'TLS < 1.2 — upgrade required'},
+  {sub:'Sub-Production-001',type:'Storage Account',name:'prodstorageacct001',rg:'RG-PROD-STORAGE',loc:'westeurope',tls:'TLS1_2',status:'OK',risk:'Low',notes:'Compliant'},
+  {sub:'Sub-Production-001',type:'Storage Account',name:'prodstorageacct002',rg:'RG-PROD-BACKUP',loc:'westeurope',tls:'TLS1_2',status:'OK',risk:'Low',notes:'Compliant'},
+  {sub:'Sub-Production-001',type:'Application Gateway',name:'agw-prod-001',rg:'RG-PROD-NET',loc:'westeurope',tls:'TLSv1_2',status:'OK',risk:'Low',notes:'Compliant'},
+  {sub:'Sub-Production-001',type:'Redis Cache',name:'redis-prod-001',rg:'RG-PROD-CACHE',loc:'westeurope',tls:'1.2',status:'OK',risk:'Low',notes:'Compliant'},
+  {sub:'Sub-Staging-002',type:'Storage Account',name:'stgstorage002',rg:'RG-STG-STORAGE',loc:'northeurope',tls:'TLS1_2',status:'OK',risk:'Low',notes:'Compliant'},
+];
+
+const Retirements=[
+  {problem:'Azure Service Fabric runtime version retirement',service:'Microsoft.ServiceFabric/clusters',resource:'sfcluster-prod-001',rg:'RG-PROD-SF',retire:'2025-06-30',dRetire:71,risk:'High',link:'https://aka.ms/sf-retire'},
+  {problem:'Azure Container Instances Gen1 network isolation retirement',service:'Microsoft.ContainerInstance/containerGroups',resource:'aci-batch-001',rg:'RG-PROD-BATCH',retire:'2025-03-31',dRetire:-20,risk:'EOL',link:'https://aka.ms/aci-retire'},
+  {problem:'Azure Active Directory Graph API retirement',service:'Microsoft.AAD/graphEndpoints',resource:'aad-app-legacy-001',rg:'RG-SHARED-AUTH',retire:'2025-03-31',dRetire:-20,risk:'EOL',link:'https://aka.ms/aad-graph'},
+  {problem:'Azure Classic Alerts retirement',service:'microsoft.insights/alertrules',resource:'alert-cpu-prod',rg:'RG-PROD-MON',retire:'2026-09-30',dRetire:163,risk:'High',link:''},
+  {problem:'Azure Classic Alerts retirement',service:'microsoft.insights/alertrules',resource:'alert-mem-prod',rg:'RG-PROD-MON',retire:'2026-09-30',dRetire:163,risk:'High',link:''},
+  {problem:'TLS 1.0/1.1 retirement for Azure Storage',service:'Microsoft.Storage/storageAccounts',resource:'stgstorage001',rg:'RG-STG-STORAGE',retire:'2025-08-01',dRetire:103,risk:'High',link:'https://aka.ms/storage-tls'},
+  {problem:'Azure Service Fabric runtime version retirement',service:'Microsoft.ServiceFabric/clusters',resource:'sfcluster-dev-001',rg:'RG-DEV-SF',retire:'2025-06-30',dRetire:71,risk:'High',link:'https://aka.ms/sf-retire'},
+  {problem:'Azure Container Instances Gen1 network isolation retirement',service:'Microsoft.ContainerInstance/containerGroups',resource:'aci-staging-001',rg:'RG-STG-ACI',retire:'2025-03-31',dRetire:-20,risk:'EOL',link:'https://aka.ms/aci-retire'},
+  {problem:'Azure Classic Alerts retirement',service:'microsoft.insights/alertrules',resource:'alert-disk-stg',rg:'RG-STG-MON',retire:'2026-09-30',dRetire:163,risk:'High',link:''},
+  {problem:'TLS 1.0/1.1 retirement for Azure Storage',service:'Microsoft.Storage/storageAccounts',resource:'devstorageacct001',rg:'RG-DEV-STORAGE',retire:'2025-08-01',dRetire:103,risk:'High',link:'https://aka.ms/storage-tls'},
+  {problem:'Azure Active Directory Graph API retirement',service:'Microsoft.AAD/graphEndpoints',resource:'aad-app-report-001',rg:'RG-PROD-REPORT',retire:'2025-03-31',dRetire:-20,risk:'EOL',link:'https://aka.ms/aad-graph'},
+  {problem:'TLS 1.0/1.1 retirement for Azure Storage',service:'Microsoft.Storage/storageAccounts',resource:'sharedstorageacct001',rg:'RG-SHARED-STORAGE',retire:'2025-08-01',dRetire:103,risk:'High',link:'https://aka.ms/storage-tls'},
+];
+
+const LCTags=[
+  {sub:'Sub-Production-001',rg:'RG-PROD-WEB',loc:'westeurope',tv:'12.2026',status:'OK',dLeft:236,risk:'Low',rc:12},
+  {sub:'Sub-Production-001',rg:'RG-PROD-API',loc:'westeurope',tv:'06.2026',status:'Approaching',dLeft:61,risk:'High',rc:8},
+  {sub:'Sub-Production-001',rg:'RG-PROD-SQL',loc:'westeurope',tv:'',status:'Empty',dLeft:9999,risk:'High',rc:3},
+  {sub:'Sub-Production-001',rg:'RG-PROD-BATCH',loc:'westeurope',tv:'03.2025',status:'Expired',dLeft:-50,risk:'EOL',rc:5},
+  {sub:'Sub-Production-001',rg:'RG-PROD-INFRA',loc:'westeurope',tv:'01.2030',status:'Too far',dLeft:1352,risk:'Medium',rc:7},
+  {sub:'Sub-Staging-002',rg:'RG-STG-WEB',loc:'northeurope',tv:'09.2026',status:'OK',dLeft:163,risk:'Low',rc:4},
+  {sub:'Sub-Staging-002',rg:'RG-STG-API',loc:'northeurope',tv:'11.2026',status:'OK',dLeft:224,risk:'Low',rc:3},
+  {sub:'Sub-Staging-002',rg:'RG-STG-DB',loc:'northeurope',tv:'',status:'Missing',dLeft:9999,risk:'High',rc:2},
+  {sub:'Sub-Dev-003',rg:'RG-DEV-APP',loc:'eastus',tv:'05.2026',status:'Imminent',dLeft:40,risk:'Critical',rc:9},
+  {sub:'Sub-Dev-003',rg:'RG-DEV-BUILD',loc:'eastus',tv:'',status:'Missing',dLeft:9999,risk:'High',rc:6},
+  {sub:'Sub-Dev-003',rg:'RG-DEV-CI',loc:'eastus',tv:'07.2026',status:'OK',dLeft:102,risk:'Low',rc:4},
+  {sub:'Sub-Dev-003',rg:'RG-DEV-SQL',loc:'eastus',tv:'08.2026',status:'OK',dLeft:132,risk:'Low',rc:2},
+  {sub:'Sub-Dev-003',rg:'RG-DEV-LEGACY',loc:'westeurope',tv:'',status:'Missing',dLeft:9999,risk:'High',rc:3},
+  {sub:'Sub-Dev-003',rg:'RG-DEV-MIGRATION',loc:'westeurope',tv:'06.2026',status:'Approaching',dLeft:61,risk:'High',rc:1},
+  {sub:'Sub-Shared-004',rg:'RG-SHARED-AUTH',loc:'westeurope',tv:'10.2027',status:'OK',dLeft:530,risk:'Low',rc:5},
+  {sub:'Sub-Shared-004',rg:'RG-SHARED-INFRA',loc:'westeurope',tv:'12.2027',status:'OK',dLeft:590,risk:'Low',rc:11},
+  {sub:'Sub-Shared-004',rg:'RG-SHARED-NET',loc:'westeurope',tv:'',status:'Missing',dLeft:9999,risk:'High',rc:8},
+  {sub:'Sub-Shared-004',rg:'RG-SHARED-BACKUP',loc:'northeurope',tv:'03.2026',status:'OK',dLeft:19,risk:'Low',rc:4},
+];
+
+function renderVMs(){
+  document.getElementById('vm-tbody').innerHTML=VMs.map(v=>{
+    const srcTag=v.src==='Tag'?'<span class="tag t-orange">Tag</span>':v.src==='Img+Tag'?'<span class="tag t-green">Img+Tag</span>':'<span class="tag t-muted">Image</span>';
+    return`<tr><td class="cn">${v.sub}</td><td class="cn"><strong>${v.name}</strong></td><td class="cn">${v.rg}</td><td>${v.loc}</td><td style="font-size:9px;font-family:var(--mono)">${v.size}</td><td>${v.state==='Running'?'<span class="tag t-green">Running</span>':'<span class="tag t-muted">Stopped</span>'}</td><td><strong>${v.os}</strong></td><td>${v.ver}</td><td>${srcTag}</td><td>${fdate(v.eol)}</td><td>${days(v.dEOL)}</td><td>${risk(v.risk)}</td><td style="font-size:9px;color:var(--text-sec)">${v.notes}</td></tr>`
+  }).join('')
+}
+
+function renderVMSKUs(){
+  document.getElementById('vmsku-tbody').innerHTML=VMSKUs.map(s=>{
+    const lk=s.link?`<a href="${s.link}" target="_blank" style="color:var(--primary);font-size:9px">📄 Guide</a>`:'—';
+    return`<tr><td class="cn">${s.sub}</td><td class="cn"><strong>${s.vm}</strong></td><td class="cn">${s.rg}</td><td><span class="tag t-red" style="font-family:var(--mono)">${s.sku}</span></td><td style="font-size:10px">${s.problem}</td><td style="font-size:10px;color:var(--green)">${s.solution}</td><td>${fdate(s.retire)}</td><td>${days(s.dRetire)}</td><td>${risk(s.risk)}</td><td>${lk}</td></tr>`
+  }).join('')
+}
+
+function renderApps(){
+  document.getElementById('app-tbody').innerHTML=Apps.map(a=>`<tr><td class="cn">${a.sub}</td><td class="cn"><strong>${a.name}</strong></td><td class="cn">${a.rg}</td><td style="font-size:9px">${a.kind}</td><td><strong>${a.rt}</strong></td><td>${a.rtv}</td><td>${fdate(a.eol)}</td><td>${days(a.dEOL)}</td><td>${risk(a.risk)}</td><td>${a.tlss==='Deprecated'?`<span class="tag t-red">⚠ ${a.tls}</span>`:`<span class="tag t-green">${a.tls}</span>`}</td><td>${a.https==='True'?'<span class="tag t-green">✓</span>':'<span class="tag t-red">✗</span>'}</td><td style="font-size:9px;color:var(--text-sec)">${a.notes}</td></tr>`).join('')
+}
+
+function renderAKS(){
+  document.getElementById('aks-tbody').innerHTML=AKS.map(a=>`<tr><td class="cn">${a.sub}</td><td class="cn"><strong>${a.name}</strong></td><td class="cn">${a.rg}</td><td>${a.loc}</td><td><strong style="font-family:var(--mono)">${a.ver}</strong></td><td style="text-align:center">${a.nodes}</td><td>${a.eol?fdate(a.eol):'—'}</td><td>${days(a.dEOL)}</td><td>${risk(a.risk)}</td><td style="font-size:9px;color:var(--text-sec)">${a.notes}</td></tr>`).join('')
+}
+
+function renderSQL(){
+  document.getElementById('sql-tbody').innerHTML=SQL.map(s=>`<tr><td class="cn">${s.sub}</td><td class="cn"><strong>${s.srv}</strong></td><td>${s.db}</td><td class="cn">${s.rg}</td><td>${s.ver}</td><td>${s.sku}</td><td>${s.tls}</td><td>${s.tlss==='Deprecated'?'<span class="tag t-red">⚠ Deprecated</span>':'<span class="tag t-green">OK</span>'}</td><td>${risk(s.risk)}</td><td style="font-size:9px;color:var(--text-sec)">${s.notes}</td></tr>`).join('')
+}
+
+function renderTLS(){
+  document.getElementById('tls-tbody').innerHTML=TLS.map(t=>`<tr><td class="cn">${t.sub}</td><td>${t.type}</td><td class="cn"><strong>${t.name}</strong></td><td class="cn">${t.rg}</td><td>${t.loc}</td><td><strong>${t.tls}</strong></td><td>${t.status==='Deprecated'?'<span class="tag t-red">⚠ Deprecated</span>':'<span class="tag t-green">✓ OK</span>'}</td><td>${risk(t.risk)}</td><td style="font-size:9px;color:var(--text-sec)">${t.notes}</td></tr>`).join('')
+}
+
+function renderRetirements(){
+  const groups={};
+  Retirements.forEach(r=>{if(!groups[r.problem])groups[r.problem]={problem:r.problem,service:r.service,retire:r.retire,dRetire:r.dRetire,risk:r.risk,link:r.link,count:0};groups[r.problem].count++});
+  document.getElementById('retire-master').innerHTML=Object.values(groups).map(g=>{
+    const lk=g.link?`<a href="${g.link}" target="_blank" style="color:var(--primary);font-size:9px">📄</a>`:'—';
+    return`<tr><td><input type="checkbox" checked/></td><td style="font-size:10px;max-width:300px">${g.problem}</td><td style="font-size:9px;color:var(--text-sec)">${g.service}</td><td style="font-size:9px;color:var(--green)">Migrate to current version</td><td>${fdate(g.retire)}</td><td>${risk(g.risk)}</td><td style="text-align:center;font-weight:800;font-size:13px">${g.count}</td><td>${lk}</td></tr>`
+  }).join('')
+  document.getElementById('retire-detail').innerHTML=Retirements.map(r=>{
+    const lk=r.link?`<a href="${r.link}" target="_blank" style="color:var(--primary);font-size:9px">📄</a>`:'—';
+    return`<tr style="${r.dRetire<0?'background:var(--eol-s)':''}"><td class="cn">${r.sub||'—'}</td><td style="font-size:9px">${r.service}</td><td class="cn"><strong>${r.resource}</strong></td><td class="cn">${r.rg}</td><td style="font-size:9px;max-width:200px" title="${r.problem}">${r.problem.length>70?r.problem.slice(0,67)+'...':r.problem}</td><td>${fdate(r.retire)}</td><td>${days(r.dRetire)}</td><td>${risk(r.risk)}</td><td>${lk}</td></tr>`
+  }).join('')
+}
+
+function stTag(s){const m={OK:'t-green',Missing:'t-red',Empty:'t-orange',Expired:'t-eol','Bad format':'t-red',Imminent:'t-crit',Approaching:'t-orange','Too far':'t-blue'};return`<span class="tag ${m[s]||'t-muted'}">${s}</span>`}
+function renderLCTags(){
+  document.getElementById('lctag-tbody').innerHTML=LCTags.map(t=>{
+    const tvd=t.status==='Missing'?'<span style="color:var(--red);font-style:italic">not set</span>':t.status==='Empty'?'<span style="color:var(--orange);font-style:italic">empty</span>':`<strong>${t.tv}</strong>`;
+    const dleft=t.dLeft>9000?'<span style="color:var(--muted)">—</span>':days(t.dLeft);
+    return`<tr style="${t.status==='Expired'?'background:var(--eol-s)':t.status==='Missing'||t.status==='Empty'?'background:var(--red-s)':''}"><td class="cn">${t.sub}</td><td class="cn"><strong>${t.rg}</strong></td><td>${t.loc}</td><td>${tvd}</td><td>${stTag(t.status)}</td><td>${dleft}</td><td>${risk(t.risk)}</td><td style="text-align:center">${t.rc}</td></tr>`
+  }).join('')
+}
+
+function buildTopActions(){
+  const actions=[];
+  VMs.filter(v=>v.risk==='EOL'||v.risk==='Critical').forEach(v=>actions.push({n:v.name,t:'VM',d:`${v.os} ${v.ver}`,r:v.risk,s:v.sub}));
+  Apps.filter(a=>a.risk==='EOL'||a.risk==='Critical').slice(0,3).forEach(a=>actions.push({n:a.name,t:'AppSvc',d:`${a.rt} ${a.rtv}`,r:a.risk,s:a.sub}));
+  TLS.filter(t=>t.status==='Deprecated').forEach(t=>actions.push({n:t.name,t:t.type,d:t.notes,r:'Critical',s:t.sub}));
+  document.getElementById('top-actions').innerHTML=actions.slice(0,7).map((x,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border-radius:8px;margin-bottom:5px;border-left:3px solid ${x.r==='EOL'?'var(--eol)':'var(--orange)'}"><span style="font-size:13px;font-weight:800;color:var(--primary);min-width:22px">${i+1}</span><div style="flex:1"><strong style="font-size:11px">${x.n}</strong> ${risk(x.r)} <span class="tag t-muted">${x.t}</span><br><span style="font-size:9px;color:var(--text-sec)">${x.d} · ${x.s}</span></div></div>`).join('')
+}
+
+function bar(label,val,color){return`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:10px;font-weight:600">${label}</span><span style="font-size:11px;font-weight:800;color:${color};font-family:var(--mono)">${val}%</span></div><div class="pbar"><div class="pfill" style="width:${val}%;background:${color}"></div></div></div>`}
+function buildScoreBreakdown(){
+  document.getElementById('score-breakdown').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">`+
+  `<div>${bar('Overall',54,'var(--orange)')}${bar('OS Health',44,'var(--orange)')}${bar('Runtimes',36,'var(--red)')}</div>`+
+  `<div>${bar('TLS',90,'var(--green)')}${bar('Kubernetes',67,'var(--blue)')}${bar('Safe Resources',58,'var(--orange)')}</div></div>`
+}
+
+function buildCharts(){
+  new Chart(document.getElementById('chartCat'),{type:'bar',data:{labels:['OS','Runtime','K8s','SQL','TLS'],datasets:[{label:'EOL',data:[5,5,2,0,0],backgroundColor:'#dc2626',borderRadius:2},{label:'Critical',data:[3,3,0,0,0],backgroundColor:'#f97316',borderRadius:2},{label:'High',data:[4,1,0,2,1],backgroundColor:'#f59e0b',borderRadius:2},{label:'Medium',data:[3,3,0,0,0],backgroundColor:'#3b82f6',borderRadius:2},{label:'Low',data:[3,10,4,12,7],backgroundColor:'#10b981',borderRadius:2}]},options:{plugins:{legend:{position:'top',labels:{boxWidth:9,font:{size:9}}}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}},maintainAspectRatio:false,responsive:true}});
+  new Chart(document.getElementById('chartRisk'),{type:'doughnut',data:{labels:['EOL','Critical','High','Medium','Low'],datasets:[{data:[14,9,14,18,132],backgroundColor:['#dc2626','#f97316','#f59e0b','#3b82f6','#10b981'],borderWidth:0}]},options:{cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:9,font:{size:9}}}},maintainAspectRatio:false,responsive:true}});
+  new Chart(document.getElementById('chartTimeline'),{type:'bar',data:{labels:['Q2 25','Q3 25','Q4 25','Q1 26','Q2 26','Q3 26','Q4 26'],datasets:[{label:'EOL',data:[8,3,2,0,2,0,0],backgroundColor:'#ef4444',borderRadius:3},{label:'Upcoming',data:[0,2,1,3,4,2,1],backgroundColor:'#f59e0b',borderRadius:3}]},options:{plugins:{legend:{position:'top',labels:{boxWidth:9,font:{size:9}}}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}},maintainAspectRatio:false,responsive:true}});
+  new Chart(document.getElementById('chartOS'),{type:'bar',data:{labels:['Windows Server 2019','Ubuntu 22.04 LTS','Windows Server 2016','Ubuntu 20.04 LTS','RHEL 9','Ubuntu 18.04 LTS','Windows Server 2022','CentOS 7','Windows 10 Enterprise','RHEL 8'],datasets:[{data:[3,3,2,3,1,1,1,1,1,1],backgroundColor:['#10b981','#10b981','#3b82f6','#ef4444','#10b981','#dc2626','#10b981','#dc2626','#dc2626','#10b981'],borderRadius:5}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{stepSize:1}}},maintainAspectRatio:false,responsive:true}});
+  new Chart(document.getElementById('chartRuntime'),{type:'doughnut',data:{labels:['.NET 8.0','Node.js 20','.NET 3.1','Node.js 14','Python 3.11','Java 21','PHP 7.4','Node.js 18','Python 3.8'],datasets:[{data:[3,2,1,1,1,1,1,1,1],backgroundColor:['#10b981','#f59e0b','#dc2626','#dc2626','#10b981','#10b981','#dc2626','#f97316','#dc2626'],borderWidth:0}]},options:{cutout:'50%',plugins:{legend:{position:'bottom',labels:{boxWidth:9,font:{size:9}}}},maintainAspectRatio:false,responsive:true}});
+  new Chart(document.getElementById('chartTLS'),{type:'doughnut',data:{labels:['TLS OK','TLS Deprecated'],datasets:[{data:[28,3],backgroundColor:['#10b981','#ef4444'],borderWidth:0}]},options:{cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:9,font:{size:9}}}},maintainAspectRatio:false,responsive:true}});
+}
+
+function buildDiag(){
+  const lines=[
+    '[2026-04-20 07:00:01] [INFO]  [AUTH]   Connected with User MI (ClientId: abc12345-def6-7890).',
+    '[2026-04-20 07:00:03] [INFO]  [SUB]    Found 5 sub(s). Excluded 1 VS/DevTest. Processing 4.',
+    '[2026-04-20 07:00:03] [INFO]  [PERF]   PowerShell 7.4.2. Parallel: True.',
+    '[2026-04-20 07:00:04] [INFO]  [EOLAPI] Fetching lifecycle data from endoflife.date...',
+    '[2026-04-20 07:00:05] [INFO]  [EOLAPI]   Windows Server: loaded 8 cycles from API',
+    '[2026-04-20 07:00:05] [INFO]  [EOLAPI]   Ubuntu: loaded 12 cycles from API',
+    '[2026-04-20 07:00:05] [WARN]  [EOLAPI] Failed to fetch endoflife.date/centos.json: Request timed out.',
+    '[2026-04-20 07:00:05] [WARN]  [EOLAPI] API partially/fully failed — merging hardcoded OS fallback data',
+    '[2026-04-20 07:00:06] [INFO]  [EOLAPI]   .NET: loaded 10 cycles from API',
+    '[2026-04-20 07:00:06] [INFO]  [EOLAPI]   Node.js: loaded 14 cycles from API',
+    '[2026-04-20 07:00:07] [INFO]  [AKSAPI] Fetching AKS supported versions from Azure API...',
+    '[2026-04-20 07:00:07] [INFO]  [AKSAPI]   AKS: 5 supported versions loaded from Azure API',
+    '[2026-04-20 07:00:08] [INFO]  [DATA]   Starting data collection...',
+    '[2026-04-20 07:00:12] [INFO]  [VMOS]   Found 18 VMs scanned for OS obsolescence.',
+    '[2026-04-20 07:00:18] [INFO]  [APPSVC] Found 22 App Services scanned.',
+    '[2026-04-20 07:00:21] [INFO]  [AKS]    Found 6 AKS clusters scanned.',
+    '[2026-04-20 07:00:24] [INFO]  [SQL]    Found 14 SQL databases scanned.',
+    '[2026-04-20 07:00:31] [INFO]  [RETIRE] Retrieving Service Retirement data (Advisor Workbook method)...',
+    '[2026-04-20 07:00:32] [INFO]  [RETIRE]   [1] Catalog: 47 retiring services/features loaded.',
+    '[2026-04-20 07:00:35] [INFO]  [RETIRE]   [2] Sub-Production-001: 5 impacted resources.',
+    '[2026-04-20 07:00:36] [INFO]  [RETIRE]   [2] Sub-Staging-002: 3 impacted resources.',
+    '[2026-04-20 07:00:37] [INFO]  [RETIRE]   [2] Sub-Dev-003: 4 impacted resources.',
+    '[2026-04-20 07:00:38] [INFO]  [RETIRE]   [3] ARG: 0 new resources.',
+    '[2026-04-20 07:00:38] [INFO]  [RETIRE] Service Retirement total: 12 impacted resources.',
+    '[2026-04-20 07:00:40] [INFO]  [VMSKU]  Found 5 VM SKU deprecations (Advisor + ARG).',
+    '[2026-04-20 07:00:44] [INFO]  [TLS]    Found 31 resources scanned for TLS.',
+    '[2026-04-20 07:00:47] [INFO]  [LCTAG]  Found 28 Resource Groups scanned for lifecycle tag.',
+    '[2026-04-20 07:00:47] [INFO]  [DATA]   All data collected in 47.2s.',
+    '[2026-04-20 07:00:47] [INFO]  [KPI]    Obsolescence Score: 54/100',
+    '[2026-04-20 07:00:47] [INFO]  [KPI]    VMs: 18, AppSvc: 22, AKS: 6, SQL: 14',
+    '[2026-04-20 07:00:47] [INFO]  [KPI]    EOL: 14, Critical: 9, High: 14, Medium: 18, Low: 132',
+    '[2026-04-20 07:00:47] [INFO]  [KPI]    TLS issues: 3, Service retirements critical: 2',
+    '[2026-04-20 07:00:48] [INFO]  [HTML]   HTML report built (2847392 chars).',
+    '[2026-04-20 07:00:49] [INFO]  [ATTACH] Attachment Azure_Obsolescence_2026-04.html ready (2780.1 KB).',
+    '[2026-04-20 07:00:51] [INFO]  [MAIL]   Email sent to cloud-ops@contoso.com.',
+    '[2026-04-20 07:00:51] [INFO]  [DONE]   Script completed in 50.3s.',
+    '==============================================',
+    ' Azure Obsolescence Tracker v1.2.0 — SUMMARY',
+    '==============================================',
+    ' Subscriptions      : 4',
+    ' VMs scanned        : 18',
+    ' App Services       : 22',
+    ' AKS clusters       : 6',
+    ' SQL databases      : 14',
+    ' TLS resources      : 31',
+    ' Service retirements: 12',
+    ' Deprecated VM SKUs : 5',
+    ' Lifecycle tag RGs  : 28 (7 issues)',
+    ' ─────────────────────────────────────────────',
+    ' EOL resources      : 14',
+    ' Critical           : 9',
+    ' High               : 14',
+    ' Medium             : 18',
+    ' Low                : 132',
+    ' TLS issues         : 3',
+    ' Obsolescence Score : 54/100',
+    ' Duration           : 50.3s',
+    ' Look-ahead         : 365 days',
+    '==============================================',
+  ];
+  document.getElementById('diag-box').textContent=lines.join('\n');
+}
+
+renderVMs();renderVMSKUs();renderApps();renderAKS();renderSQL();renderTLS();renderRetirements();renderLCTags();buildTopActions();buildScoreBreakdown();buildDiag();
+setTimeout(buildCharts,100);
+</script>
+</body>
+</html>
