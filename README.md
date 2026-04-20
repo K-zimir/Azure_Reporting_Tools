@@ -10,7 +10,7 @@
 
 | Tool | Focus | Script | README |
 |------|-------|--------|--------|
-| 🛡️ **Azure Obsolescence Tracker** | Lifecycle & technical debt | [`obsolescence/`](./Azure_Obsolescence_Tracker/) | [→ README](./Azure_Obsolescence_Tracker/README.md) |
+| 🛡️ **Azure Obsolescence Tracker** | Lifecycle & technical debt | [`Azure_Obsolescence_Tracker/`](./Azure_Obsolescence_Tracker/) | [→ README](./Azure_Obsolescence_Tracker/README.md) |
 | 💰 **Azure FinOps Reporter** | Cost visibility & waste | [`finops/`](./finops/) | [→ README](./finops/README.md) |
 
 ---
