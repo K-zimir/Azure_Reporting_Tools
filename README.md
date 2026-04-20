@@ -10,7 +10,7 @@
 
 | Tool | Focus | Script | README |
 |------|-------|--------|--------|
-| 🛡️ **Azure Obsolescence Tracker** | Lifecycle & technical debt | [`obsolescence/`](./obsolescence/) | [→ README](./obsolescence/README.md) |
+| 🛡️ **Azure Obsolescence Tracker** | Lifecycle & technical debt | [`obsolescence/`](./Azure_Obsolescence_Tracker/) | [→ README](./Azure_Obsolescence_Tracker/README.md) |
 | 💰 **Azure FinOps Reporter** | Cost visibility & waste | [`finops/`](./finops/) | [→ README](./finops/README.md) |
 
 ---
@@ -32,7 +32,7 @@ Scans all subscriptions for resources running on end-of-life or near-EOL softwar
 
 **Report highlights:** Obsolescence Score (0–100), EOL timeline chart, per-resource risk classification (EOL / Critical / High / Medium / Low), Executive Summary page, per-row annotation system.
 
-→ [Full documentation](./obsolescence/README.md)
+→ [Full documentation](./Azure_Obsolescence_Tracker/README.md)
 
 ---
 
@@ -109,7 +109,7 @@ Each tool uses its own Managed Identity variable (`MI_OBSO` for the Obsolescence
 Azure_Reporting_Tools/
 ├── README.md                  ← You are here
 │
-├── obsolescence/
+├── Azure_Obsolescence_Tracker/
 │   ├── README.md
 │   └── AzureObsolescenceTracker.ps1
 │
