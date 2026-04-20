@@ -242,6 +242,8 @@ Supported AKS versions are fetched from the Azure ARM API (`/providers/Microsoft
 
 The report is a **self-contained HTML file** sent as an email attachment. It opens in any modern browser with no server or local dependencies required (CDN assets are loaded on open).
 
+Example of report : [https://k-zimir.github.io/Azure_Reporting_Tools/](https://k-zimir.github.io/Azure_Reporting_Tools/)
+
 ### Obsolescence Score (0–100)
 
 The score is computed as follows:
